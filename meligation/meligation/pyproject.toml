@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meligation"
+version = "1.0.0"
+description = "sound-autodaq -> classism log-mel bridge"
+requires-python = ">=3.9"
+dependencies = ["numpy"]
+
+[project.scripts]
+mel-build = "meligation.cli:main"
+
+[tool.setuptools]
+packages = ["meligation"]
