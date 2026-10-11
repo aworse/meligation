@@ -1,0 +1,18 @@
+import librosa
+import librosa.display
+import matplotlib.pyplot as plt
+import numpy as np
+
+audio_path = '~~~.wav'
+y, sr = librosa.load(audio_path, sr=None)
+
+n_mels = 128
+mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
+mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+
+plt.figure(figsize=(10, 4))
+librosa.display.specshow(mel_spec_db, sr=sr, x_axis='time', y_axis='mel')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Mel-Spectrogram')
+plt.tight_layout()
+plt.show()
