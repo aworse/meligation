@@ -1,18 +1,24 @@
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
 import numpy as np
+import librosa
 
-audio_path = '~~~.wav'
-y, sr = librosa.load(audio_path, sr=None)
+SR, N_FFT, WIN, HOP = 48000, 1024, 384, 96      # 8ms / 2ms @48k
+N_MELS, FMIN, FMAX, FRAMES = 64, 200, 20000, 48
 
-n_mels = 128
-mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
-mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
-
-plt.figure(figsize=(10, 4))
-librosa.display.specshow(mel_spec_db, sr=sr, x_axis='time', y_axis='mel')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Mel-Spectrogram')
-plt.tight_layout()
-plt.show()
+def logmel_clip(clip: np.ndarray, sr: int = SR) -> np.ndarray:
+    """타건 1개(~100ms, mono float32) -> AFE 입력 텐서 (1,64,48)."""
+    assert sr == SR, f"must be {SR} Hz"
+    mel = librosa.feature.melspectrogram(
+        y=clip.astype(np.float32), sr=sr,
+        n_fft=N_FFT, win_length=WIN, hop_length=HOP,
+        n_mels=N_MELS, fmin=FMIN, fmax=FMAX, power=2.0)
+    logmel = np.log(mel + 1e-6)                           # (64, T)
+    # 시간축 48로 고정
+    T = logmel.shape[1]
+    if T >= FRAMES:
+        s = (T - FRAMES) // 2
+        logmel = logmel[:, s:s + FRAMES]
+    else:
+        logmel = np.pad(logmel, ((0, 0), (0, FRAMES - T)), mode="edge")
+    # per-clip z-score
+    logmel = (logmel - logmel.mean()) / (logmel.std() + 1e-6)
+    return logmel[None, :, :].astype(np.float32)          # (1, 64, 48)
